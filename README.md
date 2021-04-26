@@ -243,3 +243,212 @@ bash build_docker_images.sh
 [支付宝](https://gitee.com/xia-chu/other/raw/master/IMG_3919.JPG)
 
 [微信](https://gitee.com/xia-chu/other/raw/master/IMG_3920.JPG)
+
+
+----
+
+\[Google Translate:]
+
+
+# A high-performance operational-level streaming media service framework based on C++11
+
+# Project Features
+* Based on C++11 development, avoid using raw pointers, the code is stable and reliable, and the performance is superior.
+* Support multiple protocols (RTSP/RTMP/HLS/HTTP-FLV/WebSocket-FLV/GB28181/HTTP-TS/WebSocket-TS/HTTP-fMP4/WebSocket-fMP4/MP4/WebRTC), support protocol conversion.
+* Use multiplexing/multithreading/asynchronous network IO mode development, superior concurrency performance, support massive client connections.
+* The code has undergone a large number of long-term stability and performance tests, and has been commercially verified online for a long time.
+* Support linux, macos, ios, android, windows all platforms.
+* Support the screen to open in seconds, very low delay (within 500 milliseconds, the lowest can reach 100 milliseconds).
+* Provide complete standard C API, can be used as SDK, or for other languages ​​to call.
+* Provide a complete MediaServer server, which can be directly deployed as a commercial server without development.
+* Provide complete restful api and web hook, support rich business logic.
+* The video surveillance protocol stack and the live broadcast protocol stack have been opened up, and the RTSP/RTMP support is very complete.
+* Fully supports H265/H264/AAC/G711/OPUS.
+
+## Project positioning
+* Mobile embedded cross-platform streaming media solutions.
+* Commercial-grade streaming media server.
+* Network programming secondary development SDK.
+
+## Function list
+Features at a glance
+
+### RTSP[S]
+
+* RTSP[S] server, supports RTMP/MP4/HLS to RTSP[S], supports devices such as Amazon echo show
+* RTSP[S] player, supports RTSP proxy, supports generating mute audio
+* RTSP[S] Push streaming client and server
+* Support rtp over udp rtp over tcp rtp over http rtp multicast four kinds of RTP transmission methods
+* Server/client fully supports login authentication in Basic/Digest mode, fully asynchronous and configurable authentication interface
+* Support H265 encoding
+* The server supports RTSP streaming (including rtp over udp rtp over tcp)
+* Support H264/H265/AAC/G711/OPUS encoding, other encodings can be forwarded but not transferred to protocol
+
+### RTMP[S]
+
+* RTMP[S] Play server, support RTSP/MP4/HLS to RTMP
+* RTMP[S] publishing server, supports recording and publishing stream
+* RTMP[S] player, supports RTMP proxy, supports generating mute audio
+* RTMP[S] streaming client
+* Support http[s]-flv live broadcast
+* Support websocket-flv live broadcast
+* Support H264/H265/AAC/G711/OPUS encoding, other encodings can be forwarded but not transferred to protocol
+* Support RTMP-H265
+* Support RTMP-OPUS
+
+
+### HLS
+
+* Support HLS file generation, with HTTP file server
+* Through cookie tracking technology, HLS playback can be simulated as a long connection, and services such as HLS on-demand streaming and playback statistics can be realized.
+* Support HLS broadcaster, support streaming HLS to rtsp/rtmp/mp4
+* Support H264/H265/AAC/G711/OPUS encoding
+
+### TS
+
+* Support http[s]-ts live broadcast
+* Support ws[s]-ts live broadcast
+* Support H264/H265/AAC/G711/OPUS encoding
+
+### fMP4
+
+* Support http[s]-fmp4 live broadcast
+* Support ws[s]-fmp4 live broadcast
+* Support H264/H265/AAC/G711/OPUS encoding
+
+
+
+### HTTP[S] and WebSocket
+
+* The server supports catalog index generation, file download, form submission request
+* The client provides a file downloader (supports resumable upload), an interface requester, and a file uploader
+* Complete HTTP API server, which can be used as a web background development framework
+* Support cross-domain access
+* Support http client, server cookie
+* Support WebSocket server and client
+* Support http file access authentication
+
+
+### GB28181 and RTP streaming
+
+* Support UDP/TCP national standard RTP (PS or TS) push server, which can be converted into RTSP/RTMP/HLS and other protocols
+* Support RTSP/RTMP/HLS to national standard push streaming client, support TCP/UDP mode, provide corresponding restful api
+* Support H264/H265/AAC/G711/OPUS encoding
+* Support Haikang ehome push streaming
+
+
+### MP4 on-demand and recording
+
+* Support recording as FLV/HLS/MP4
+* RTSP/RTMP/HTTP-FLV/WS-FLV support MP4 file on demand, support seek
+* Support H264/H265/AAC/G711/OPUS encoding
+
+### WebRTC (experience, please use the dev branch)
+
+* Support WebRTC push stream, support transfer to other protocols
+* Support WebRTC playback, support other protocols to WebRTC
+
+
+
+### other
+
+* Support rich restful api and web hook events
+* Support simple telnet debugging
+* Support configuration file hot loading
+* Support traffic statistics, push-pull flow authentication and other events
+* Support virtual host, can isolate different domain names
+* Support on-demand streaming, automatic shutdown of streaming when no one is watching
+* Support to pull the stream first and then push the stream, improve the opening rate of the timely push stream screen
+* Provide c api sdk
+* Support FFmpeg to pull streams in any format
+* Support http api to generate and return real-time screenshots
+* Support on-demand demultiplexing and protocol transfer, and the transfer protocol will be turned on when someone is watching
+
+
+### Compile and test
+
+Be sure to refer to the wiki carefully before compiling: get started quickly!!!
+
+### how to use
+
+You have three ways to use ZLMediaKit, they are:
+
+1. Use c api and use it as sdk, please refer to here.
+2. As an independent streaming media server, if you don't want to do c/c++ development, you can refer to restful api and web hook.
+3. If you want to do c/c++ development and add business logic to increase functions, you can refer to the test program here.
+
+### Docker image
+
+You can download the compiled image from Docker Hub and start it:
+
+    docker run -id -p 1935:1935 -p 8080:80 -p 8554:554 -p 10000:10000 -p 10000:10000/udp panjjo/zlmediakit
+
+
+You can also compile the image according to the Dockerfile:
+
+    bash build_docker_images.sh
+
+
+### Cooperation projects
+
+* Visual management website
+
+* A very beautiful visual background management system
+* Management WEB website based on ZLMediaKit main line
+* Management WEB website based on ZLMediaKit branch
+
+
+### Streaming media management platform
+
+* Powerful streaming media control management interface platform, support GB28181
+* GB28181-2016 network video platform
+* Node-js version of GB28181 platform
+* Haikang ehome server implemented by Go
+
+
+### Client
+
+* Push streaming client based on C SDK
+* C# version of Http API and Hook
+* DotNetCore's RESTful client
+
+
+### License agreement
+
+The project's own code uses the loose MIT protocol, and can be freely applied to their respective commercial and non-commercial projects while retaining copyright information. However, this project also uses some other open source code piecemeal, please replace or remove it by yourself in the case of commercial use; commercial disputes or infringements arising from the use of this project have nothing to do with the project and the developer, please bear the law by yourself risk. When using the code of this project, the license agreement should also indicate the agreement of the third-party library that this project relies on.
+
+### contact details
+
+Email: 1213642868@qq.com (For questions related to this project or streaming media, please follow the issue process, otherwise no email reply will be made)
+QQ group: 542509000
+
+
+### How to ask questions?
+
+If you have any questions about the project, we suggest you do this:
+
+1. Read the readme and wiki carefully, and check the issue if necessary.
+2. If your problem has not been resolved, you can submit an issue.
+3. For some questions, if they are not of reference, they do not need to be mentioned in the issue, they can be mentioned in the qq group.
+4. QQ private chat generally does not accept free technical consultation and support (why not advocate QQ private chat).
+
+### Special thanks to
+
+This project uses the old Chen's media-server library. The reuse and demultiplexing of the ts/fmp4/mp4/ps container format of this project all rely on the media-server library. In the realization of many functions of this project, Lao Chen has repeatedly given the key help of selfless enthusiasm, and hereby express my sincere thanks to him!
+
+### Thanks
+
+Thank you for your support to this project including but not limited to code contributions, problem feedback, fund donations, etc.! The following rankings are in no particular order:
+
+Old Chen Gemfield Nan Guantong bumpy slow chenxiaolei prehistoric bug Qing astringent green tea 3503207480 DroidChow Asai fire xuan γ Rui ミ linking vision eggplant good mood ups and downs Xiaofeng Wang doodoocoder qingci swwheihei KKKKK5G Zhou Weimin Jim Jin watermelon, MingZhuLiu 1995 hechengxiaosheng sunwen big panda hctym tanningzhongyuan mirs Kevin Cheng Liu Jiang along qingci lyg1949 zhlong Luke big pants droid.chow Chen Xiaolin
+
+### Use Cases
+
+This project has been recognized by many companies and individual developers. According to the author's incomplete statistics, companies using this project include well-known Internet giants, top domestic cloud service companies, many well-known AI unicorn companies, and A series of small and medium companies. Users can endorse this project by pasting the company's name and related project introduction on the issue, thank you for your support!
+
+### Donate
+
+Your donation will be used to pay for some expenses of the project and to motivate developers. Donations are welcome to better promote the development of the project, thank you for your support! At the same time, you are welcome to donate public network servers for online display effects.
+
+Alipay 
+
