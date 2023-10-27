@@ -28,3 +28,9 @@ jobs:
           buildDirectory: '${{github.workspace}}/build'
           cmakeAppendedArgs: '-DCMAKE_ENABLE_WEBRTC:BOOL=ON'
           cmakeBuildType: 'RelWithDebInfo'
+
+      - name: 上传
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./build/*
