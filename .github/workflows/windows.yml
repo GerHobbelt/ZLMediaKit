@@ -33,4 +33,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            D:/a/ZLMediaKit/ZLMediaKit/build/*
+            D:/a/ZLMediaKit/ZLMediaKit/release/windows/RelWithDebInfo/*
