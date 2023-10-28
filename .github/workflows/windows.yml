@@ -22,11 +22,11 @@ jobs:
           vcpkgArguments: 'openssl libsrtp'
 
       - name: 编译
-        uses: lukka/run-cmake@v10.6
+        uses: lukka/run-cmake@v3
         with:
           useVcpkgToolchainFile: true
           buildDirectory: '${{github.workspace}}/build'
-          cmakeAppendedArgs: '-DCMAKE_ENABLE_WEBRTC:BOOL=ON'
+          cmakeAppendedArgs: '-DCMAKE_ENABLE_WEBRTC:BOOL=ON -DC_COMPILER_ID:MSVC==utf-8 CXX_COMPILER_ID:MSVC=utf-8'
           cmakeBuildType: 'RelWithDebInfo'
 
       - name: 上传
