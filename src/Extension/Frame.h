@@ -30,7 +30,9 @@ typedef enum {
     CodecG711U,
     CodecOpus,
     CodecL16,
-    CodecMax = 0x7FFF
+    CodecVP8,
+    CodecVP9,
+    CodecMax
 } CodecId;
 
 typedef enum {
@@ -38,8 +40,26 @@ typedef enum {
     TrackVideo = 0,
     TrackAudio,
     TrackTitle,
-    TrackMax = 3
+    TrackApplication,
+    TrackMax
 } TrackType;
+
+/**
+ * 字符串转媒体类型转
+ */
+TrackType getTrackType(const string &str);
+
+/**
+ * 媒体类型转字符串
+ */
+const char* getTrackString(TrackType type);
+
+/**
+ * 根据SDP中描述获取codec_id
+ * @param str
+ * @return
+ */
+CodecId getCodecId(const string &str);
 
 /**
  * 获取编码器名称

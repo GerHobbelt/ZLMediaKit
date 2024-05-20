@@ -9,6 +9,7 @@
  */
 
 #include <stddef.h>
+#include <assert.h>
 #include "Rtcp.h"
 #include "Util/logger.h"
 
@@ -29,6 +30,15 @@ const char *sdesTypeToStr(SdesType type){
         SDES_TYPE_MAP(SWITCH_CASE)
 #undef SWITCH_CASE
         default: return "unknown source description type";
+    }
+}
+
+const char *psfbTypeToStr(PSFBType type) {
+    switch (type){
+#define SWITCH_CASE(key, value) case PSFBType::key :  return #value "(" #key ")";
+        PSFB_TYPE_MAP(SWITCH_CASE)
+#undef SWITCH_CASE
+        default: return "unknown payload-specific fb message fmt type";
     }
 }
 
@@ -82,8 +92,23 @@ string RtcpHeader::dumpString() const {
             RtcpSdes *rtcp = (RtcpSdes *)this;
             return rtcp->dumpString();
         }
+
+        case RtcpType::RTCP_PSFB: {
+            RtcpPli *rtcp = (RtcpPli *)this;
+            return rtcp->dumpString();
+        }
+
+        case RtcpType::RTCP_BYE: {
+            RtcpBye *rtcp = (RtcpBye *)this;
+            return rtcp->dumpString();
+        }
+
         default: return StrPrinter << dumpHeader() << hexdump((char *)this + sizeof(*this), length << 2);
     }
+}
+
+size_t RtcpHeader::getSize() const {
+    return (1 + length) << 2;
 }
 
 void RtcpHeader::net2Host(size_t len){
@@ -105,6 +130,24 @@ void RtcpHeader::net2Host(size_t len){
             sdes->net2Host(len);
             break;
         }
+
+        case RtcpType::RTCP_PSFB: {
+            RtcpPli *pli = (RtcpPli *)this;
+            pli->net2Host(len);
+            break;
+        }
+
+        case RtcpType::RTCP_BYE: {
+            RtcpBye *bye = (RtcpBye *)this;
+            bye->net2Host(len);
+            break;
+        }
+
+        case RtcpType::RTCP_RTPFB: {
+            RtcpPli *pli = (RtcpPli *)this;
+            pli->net2Host(len);
+            break;
+        }
         default: throw std::runtime_error(StrPrinter << "未处理的rtcp包:" << rtcpTypeToStr((RtcpType) this->pt));
     }
 }
@@ -116,12 +159,16 @@ vector<RtcpHeader *> RtcpHeader::loadFromBytes(char *data, size_t len){
     while (remain > (ssize_t) sizeof(RtcpHeader)) {
         RtcpHeader *rtcp = (RtcpHeader *) ptr;
         auto rtcp_len = (1 + ntohs(rtcp->length)) << 2;
+        if (remain < rtcp_len) {
+            WarnL << "非法的rtcp包,声明的长度超过实际数据长度";
+            break;
+        }
         try {
             rtcp->net2Host(rtcp_len);
             ret.emplace_back(rtcp);
         } catch (std::exception &ex) {
             //不能处理的rtcp包，或者无法解析的rtcp包，忽略掉
-            WarnL << ex.what();
+            WarnL << ex.what() << ",长度为:" << rtcp_len;
         }
         ptr += rtcp_len;
         remain -= rtcp_len;
@@ -133,7 +180,7 @@ class BufferRtcp : public Buffer {
 public:
     BufferRtcp(std::shared_ptr<RtcpHeader> rtcp) {
         _rtcp = std::move(rtcp);
-        _size = (htons(_rtcp->length) + 1) << 2;
+        _size = (ntohs(_rtcp->length) + 1) << 2;
     }
 
     ~BufferRtcp() override {}
@@ -338,7 +385,7 @@ string SdesItem::dumpString() const{
     printer << "ssrc:" << ssrc << "\r\n";
     printer << "type:" << sdesTypeToStr((SdesType) type) << "\r\n";
     printer << "length:" << (int) length << "\r\n";
-    printer << "text:" << (length ? string(&text, length) : "") << "\r\n";
+    printer << "text:" << (length ? string(text, length) : "") << "\r\n";
     return std::move(printer);
 }
 
@@ -356,7 +403,7 @@ std::shared_ptr<RtcpSdes> RtcpSdes::create(const std::initializer_list<string> &
     for (auto &text : item_text) {
         item_ptr->length = (0xFF & text.size());
         //确保赋值\0为RTCP_SDES_END
-        memcpy(&(item_ptr->text), text.data(), item_ptr->length + 1);
+        memcpy(item_ptr->text, text.data(), item_ptr->length + 1);
         item_ptr = (SdesItem *) ((char *) item_ptr + item_ptr->totalBytes());
     }
 
@@ -401,5 +448,125 @@ vector<SdesItem *> RtcpSdes::getItemList() {
     }
     return ret;
 }
+
+////////////////////////////////////////////////////////////////////
+
+std::shared_ptr<RtcpPli> RtcpPli::create() {
+    auto bytes = alignSize(sizeof(RtcpPli));
+    auto ptr = (RtcpRR *) new char[bytes];
+    setupHeader(ptr, RtcpType::RTCP_PSFB, 1, bytes);
+    return std::shared_ptr<RtcpPli>((RtcpPli *) ptr, [](RtcpPli *ptr) {
+        delete[] (char *) ptr;
+    });
+}
+
+string RtcpPli::dumpString() const {
+    _StrPrinter printer;
+    printer << RtcpHeader::dumpHeader();
+    printer << "ssrc:" << ssrc << "\r\n";
+    printer << "ssrc_media:" << ssrc_media;
+    return std::move(printer);
+}
+
+void RtcpPli::net2Host(size_t size) {
+    static const size_t kMinSize = sizeof(RtcpPli);
+    CHECK_MIN_SIZE(size, kMinSize);
+    RtcpHeader::net2Host();
+    ssrc = ntohl(ssrc);
+    ssrc_media = ntohl(ssrc_media);
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::shared_ptr<RtcpBye> RtcpBye::create(const std::initializer_list<uint32_t> &ssrcs, const string &reason) {
+    assert(reason.size() <= 0xFF);
+    auto bytes = alignSize(sizeof(RtcpHeader) + sizeof(uint32_t) * ssrcs.size() + 1 + reason.size());
+    auto ptr = (RtcpBye *) new char[bytes];
+    setupHeader(ptr, RtcpType::RTCP_BYE, ssrcs.size(), bytes);
+
+    auto *ssrc_ptr = &(((RtcpBye *) ptr)->ssrc);
+    for (auto ssrc : ssrcs) {
+        *ssrc_ptr = htonl(ssrc);
+        ++ssrc_ptr;
+    }
+
+    if (!reason.empty()) {
+        uint8_t *reason_len_ptr = (uint8_t *) ptr + sizeof(RtcpHeader) + sizeof(uint32_t) * ssrcs.size();
+        *reason_len_ptr = reason.size() & 0xFF;
+        memcpy(reason_len_ptr + 1, reason.data(), *reason_len_ptr);
+    }
+
+    return std::shared_ptr<RtcpBye>(ptr, [](RtcpBye *ptr) {
+        delete[] (char *) ptr;
+    });
+}
+
+vector<uint32_t *> RtcpBye::getSSRC()  {
+    vector<uint32_t *> ret;
+    uint32_t *ssrc_ptr = &ssrc;
+    for (size_t i = 0; i < report_count; ++i) {
+        ret.emplace_back(ssrc_ptr);
+        ssrc_ptr += 1;
+    }
+    return ret;
+}
+
+string RtcpBye::getReason() const {
+    auto *reason_len_ptr = &reason_len + sizeof(ssrc) * (report_count - 1);
+    if (reason_len_ptr + 1 >= (uint8_t *) this + getSize()) {
+        return "";
+    }
+    return string((char *) reason_len_ptr + 1, *reason_len_ptr);
+}
+
+string RtcpBye::dumpString() const {
+    _StrPrinter printer;
+    printer << RtcpHeader::dumpHeader();
+    for(auto ssrc : ((RtcpBye *)this)->getSSRC()) {
+        printer << "ssrc:" << *ssrc << "\r\n";
+    }
+    printer << "reason:" << getReason();
+    return std::move(printer);
+}
+
+void RtcpBye::net2Host(size_t size) {
+    static const size_t kMinSize = sizeof(RtcpHeader);
+    CHECK_MIN_SIZE(size, kMinSize);
+    RtcpHeader::net2Host();
+
+    uint32_t *ssrc_ptr = &ssrc;
+    size_t offset = kMinSize;
+    size_t i = 0;
+    for (; i < report_count && offset + sizeof(ssrc) <= size; ++i) {
+        *ssrc_ptr = ntohl(*ssrc_ptr);
+        ssrc_ptr += 1;
+        offset += sizeof(ssrc);
+    }
+    //修正ssrc个数
+    CHECK_LENGTH(size, i);
+
+    if (offset < size) {
+        uint8_t *reason_len_ptr = &reason_len + sizeof(ssrc) * (report_count - 1);
+        if (reason_len_ptr + 1 + *reason_len_ptr > (uint8_t *) this + size) {
+            WarnL << "invalid rtcp bye reason length";
+            //修正reason_len长度
+            *reason_len_ptr = ((uint8_t *) this + size - reason_len_ptr - 1) & 0xFF;
+        }
+    }
+}
+
+#if 0
+#include "Util/onceToken.h"
+
+static toolkit::onceToken token([](){
+    auto bye = RtcpBye::create({1,2,3,4,5,6}, "this is a bye reason");
+    auto buffer = RtcpHeader::toBuffer(bye);
+
+    auto rtcps = RtcpHeader::loadFromBytes(buffer->data(), buffer->size());
+    for(auto rtcp : rtcps){
+        std::cout << rtcp->dumpString() << std::endl;
+    }
+});
+#endif
 
 }//namespace mediakit
